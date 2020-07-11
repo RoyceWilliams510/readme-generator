@@ -10,17 +10,22 @@ const questions = [
 "What is the guidelines for your projects installation",
 "What licenses is your project under?",
 "How many colaborators were there on this project (outside of yourself)?",
-"Hpw many user stories do you want?"
+"How many user stories do you want?"
 ];
 const prompts = ["As a <role> I can <capability>, so that <receive benefit>", 
 "In order to <receive benefit> as a <role>, I can <goal/desire>",
 "As <who> <when> <where>, I <want> because <why>"
 ]
 function writeToFile(fileName, data) {
-
+    fs.writeFile(fileName, markdown(data), function(err){
+        if(err){
+            throw err;
+        }
+    })
 }
 
 async function init() {
+    
     const { name } = await inquirer.prompt({
         input:"text",
         message: questions[0],
@@ -41,9 +46,9 @@ async function init() {
         message: questions[3],
         name: "licenses"
       });
-
+    
     // User stories
-
+    
     const{ storyCount} = await inquirer.prompt({
         input:"number",
         message: questions[5],
@@ -58,10 +63,8 @@ async function init() {
                 name: "storyType",
                 choices: prompts
             })
-            console.log(storyType);
             if(storyType === prompts[1]){
-                console.log("Fill in the following user story prompt")
-                console.log(prompts[1])
+                console.log("Fill in the following user story prompt: "+prompts[1])
                 const {benefit} = await inquirer.prompt({
                     input:"text",
                     message: "<recieve benefits>",
@@ -82,8 +85,7 @@ async function init() {
 
             }
             if(storyType === prompts[0]){
-                console.log("Fill in the following user story prompt");
-                console.log(prompts[0]);
+                console.log("Fill in the following user story prompt: "+ prompts[0]);
                 const {role} = await inquirer.prompt({
                     input:"text",
                     message: "<role>",
@@ -104,8 +106,7 @@ async function init() {
 
             }
             if(storyType === prompts[2]){
-                console.log("Fill in the following user story prompt");
-                console.log(prompts[2]);
+                console.log("Fill in the following user story prompt: "+ prompts[2]);
                 const {who} = await inquirer.prompt({
                     input:"text",
                     message: "<who>",
@@ -136,9 +137,7 @@ async function init() {
             }
 
         }
-    }
-    console.log(userStories);
-    
+    }    
     // generates an array of colaborators
     const {colaboratorNumber} = await inquirer.prompt({
         input:"number",
@@ -156,35 +155,42 @@ async function init() {
             colaborators.push(collaborator);
         }
     }
-    console.log(colaborators);
     // for the github stuff
     const {username} = await inquirer.prompt({
-        message: "Enter your GitHub username",
+        message: "Enter your GitHub username: ",
         name: "username"
-        })
+    })
     const queryUrl = `https://api.github.com/users/${username}`;
-    const userImage = axios.get(queryUrl).then( await function(res) {
-        console.log(res.data.avatar_url);
+    const userImage = await axios.get(queryUrl).then(function(res) {
         return res.data.avatar_url;
     });
-    const userEmail = axios.get(queryUrl).then( await function(res) {
-        console.log(res.data.email);
+    const userEmail = await axios.get(queryUrl).then( function(res) {
         return res.data.email;
     });
-    
+    const author = await axios.get(queryUrl).then(function(res) {
+        return res.data.name;
+    });
+    const {webUrl} =  await inquirer.prompt({
+        input:"text",
+        message: "Is your website live? If so type in the url of the deployed page, and if not then type 'n': ",
+        name: "webUrl"
+    })
+   
     const data = {
         title: name,
+        author: author,
         installation: install,
         licenses: licenses,
         username: username,
-        ImageUrl: userImage,
+        imageUrl: userImage,
         email: userEmail,
         colaborators: colaborators,
         description: description,
-        userStories: userStories
+        userStories: userStories,
+        webUrl: webUrl
     }
     console.log(data);
-
+    writeToFile("newREADME.md", data);
 }
 
 init();
